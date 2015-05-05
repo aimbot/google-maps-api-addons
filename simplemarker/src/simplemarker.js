@@ -98,6 +98,9 @@ var SimpleMarker = function(opts) {
   /** @private @type {boolean} */
   this.visible_ = opts.visible || true;
 
+  /** @private @type {string} */
+  this.animatedClassName_ = opts.animatedClassName || null;
+
   // At last, call some methods which use the initialized parameters
   this.setMap(this.map_);
 };
@@ -149,8 +152,36 @@ SimpleMarker.prototype.onAdd = function() {
   } else {
     marker.addEventListener('click', trigger, false);
   }
+
+  var animationEvent = whichAnimationEvent();
+
+  // If we defined an animation class name when the animation completes
+  // remove the class so it can be re-triggered.
+  if (self.animatedClassName_) {
+    this.marker_.addEventListener(animationEvent, function(event) {
+      this.classList.remove(self.animatedClassName_);
+    });
+  }
 };
 
+// Function from David Walsh: http://davidwalsh.name/css-animation-callback
+function whichAnimationEvent() {
+  var t,
+    el = document.createElement("fakeelement");
+
+  var animations = {
+    "animation"      : "animationend",
+    "OAnimation"     : "oAnimationEnd",
+    "MozAnimation"   : "animationend",
+    "WebkitAnimation": "webkitAnimationEnd"
+  }
+
+  for (t in animations){
+    if (el.style[t] !== undefined){
+      return animations[t];
+    }
+  }
+}
 
 /** @override */
 SimpleMarker.prototype.onRemove = function() {
@@ -288,6 +319,11 @@ SimpleMarker.prototype.setPosition = function(position) {
   this.position_ = position;
   this.bounds_ = []; // cached bounds become invalid with a new position
   this.draw();
+
+  // Add the animation class again since we updated the marker
+  if (this.animatedClassName_) {
+    this.marker_.classList.add(this.animatedClassName_);
+  }
 };
 
 
